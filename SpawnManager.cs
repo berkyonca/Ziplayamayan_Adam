@@ -1,58 +1,35 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
+using UnityEngine.SceneManagement;
 
-public class SpawnManager : MonoBehaviour
+public class spawnManager : MonoBehaviour
 {
-    public GameObject EnemySpawn;
-    private int i;
-    private int enemyCount;
-    private int waveNumber = 1;
-    public GameObject boostUpStart;
-    public AudioClip bellRing;
-    TextMeshProUGUI WaveText;
+    public GameObject[ ] obstaclePrefab;
+    private Vector3 spawnPos = new Vector3(32, 0, -0.86f);
+    public float startDelay = 2;
+    public float repeatRate = 2;
+    private playerController playerControllerScript;
     private void Start()
     {
-        spawnEnemyWave(waveNumber);
-        Invoke("ýnstantiateBoostUp", 4);
-        WaveText = GameObject.Find("Canvas/WaveText").GetComponent<TextMeshProUGUI>();
+        playerControllerScript = GameObject.Find("Player").GetComponent<playerController>();
+        InvokeRepeating("SpawnObstacles", startDelay, repeatRate );
+    }
+    private void SpawnObstacles()
+    {
+       
+        if(playerControllerScript.gameOver == false)
+        {
+            int randomObstacles = Random.Range(0, obstaclePrefab.Length);
+            Instantiate(obstaclePrefab[randomObstacles], spawnPos, obstaclePrefab[randomObstacles].transform.rotation);
+        }
     }
     private void Update()
     {
-        enemyCount = FindObjectsOfType<Enemy>().Length;
-        if (enemyCount == 0)
+        if (Input.GetKeyDown(KeyCode.R))
         {
-            waveNumber++;
-            GetComponent<AudioSource>().PlayOneShot(bellRing, 1f);
-            StartCoroutine(PowerUpCountDownRoutine());
-            spawnEnemyWave(waveNumber + 2);
-            WaveText.text = "WAVE " + waveNumber.ToString();
-        }
-    }
-    IEnumerator PowerUpCountDownRoutine()
-    {
-        yield return new WaitForSeconds(3);
-        WaveText.gameObject.SetActive(true);
-    }
-    void ýnstantiateBoostUp()
-    {
-        Instantiate(boostUpStart, transform.position, transform.rotation);
-    }
-    void spawnEnemyWave(int enemySpawn)
-    {
-        for (i = 0; i < enemySpawn; i++)
-        {
-            Instantiate(EnemySpawn, GenerateSpawnPosition(), EnemySpawn.transform.rotation);
-        }
-    }
-    private  Vector3 GenerateSpawnPosition()
-    {
-        float spawnPosX = Random.Range(-3, 7);
-        float spawnPosZ = Random.Range(-7, 9);
-        Vector3 randomPos = new Vector3(spawnPosX, 0.81f, spawnPosZ);
-        return randomPos;
-    }
-    
-}
+            SceneManager.LoadScene(0);
 
+        }
+    }
+}

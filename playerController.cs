@@ -1,76 +1,67 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class playerController : MonoBehaviour
 {
     private Rigidbody playerRb;
-    private GameObject focalPoint;
-    float speed = 20.0f;
-    public bool HasPowerup = false;
-    public bool HasPowerup2 = false;
-    private float powerUpStrength = 15.0f;
-    public GameObject powerupIndicators;
-    public GameObject powerUpPreFab;
-    public AudioClip ballHit, boostHit;
+    private Animator playerAnim;
+    public AudioSource playerAudio;
+    public ParticleSystem dirtParticle;
+    public ParticleSystem particleExplosion;
+    public AudioClip jumpSound;
+    public AudioClip crashSound;
+    public AudioClip runningSound;
+    public AudioClip crashObstacleSound;
+    public float jumpForce = 620;
+    public float gravityModifier = 2.5f;
+    public bool isOnGround = true;
+    public bool gameOver = false;
+   
     private void Start()
     {
+        playerAnim = GetComponent<Animator>();
         playerRb = GetComponent<Rigidbody>();
-        focalPoint = GameObject.Find("Focal Point");
+        playerAudio = GetComponent<AudioSource>();
+        Physics.gravity *= gravityModifier;
+        
     }
-    private void Update()
-    { 
-        float forwardInput = Input.GetAxis("Vertical");
-        playerRb.AddForce(focalPoint.transform.forward * forwardInput * speed);
-
-        if (playerRb.transform.position.y <= -10) 
-        {
-            transform.position = new Vector3(0, .15f, 0);
-            GetComponent<Rigidbody>().velocity = new Vector3(0, 0, 0);
-        }
-        powerupIndicators.transform.position = transform.position + new Vector3(0, -.5f, 0);
-    }
-
-    private void OnTriggerEnter(Collider other)
+    public void Update()
     {
-        if (other.gameObject.CompareTag("powerup"))
+        if (Input.GetKeyDown(KeyCode.Space) && isOnGround && !gameOver)
         {
-            HasPowerup = true;
-            Destroy(other.gameObject);
-            StartCoroutine(PowerUpCountDownRoutine());
-            powerupIndicators.gameObject.SetActive(true);
-            StartCoroutine(powerUpSpawner());
-            GetComponent<AudioSource>().PlayOneShot(boostHit, 1f);
+            playerRb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            isOnGround = false;
+            playerAnim.SetTrigger("Jump_trig");
+            playerAudio.PlayOneShot(jumpSound, 1.3f);
+            dirtParticle.Stop();    
         }
+         
+        
+
     }
-
-    IEnumerator PowerUpCountDownRoutine()
+    public void OnCollisionEnter(Collision collision)
     {
-        yield return new WaitForSeconds(5);
-        HasPowerup = false;
-        powerupIndicators.gameObject.SetActive(false);
-    }
-
-
-
-    IEnumerator powerUpSpawner()  // Bu fonksiyon powerUp 'ýn alýndýktan 10 saniye sonra tekrardan çýkmasý için yazýldý.
-    {
-        yield return new WaitForSeconds(10);
-        Instantiate(powerUpPreFab, new Vector3(Random.Range(-8, 7), 0.38f, Random.Range(6, -8)), powerUpPreFab.transform.rotation);
-    }
-
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("Enemy") && HasPowerup)
+        if (collision.gameObject.CompareTag("Ground"))
         {
-            Rigidbody enemyRb = collision.gameObject.GetComponent<Rigidbody>();
-            Vector3 awayFromPlayer = collision.gameObject.transform.position - transform.position;
-            enemyRb.AddForce(awayFromPlayer * powerUpStrength, ForceMode.Impulse);
+            isOnGround = true;
+            dirtParticle.Play();
         }
-        if (collision.gameObject.CompareTag("Enemy"))
+        else if (collision.gameObject.CompareTag("Obstacle"))
         {
-            GetComponent<AudioSource>().PlayOneShot(ballHit, 1f);
+
+            gameOver = true;
+            Debug.Log("Game Over!");
+            playerAnim.SetBool("Death_b", true);
+            playerAnim.SetInteger("DeathType_int", 1);
+            particleExplosion.Play();
+            dirtParticle.Stop();
+            playerAudio.PlayOneShot(crashSound, 1.8f);
+            playerAudio.PlayOneShot(crashObstacleSound, 2f);
         }
+        
+
     }
+   
 }
