@@ -15,7 +15,12 @@ public class repeatBackground : MonoBehaviour
 
     void Update()
     {
-        if (transform.position.x < startPos.x - repeatWidth)
+       Background();
+    }
+
+    private void Background()
+    {
+         if (transform.position.x < startPos.x - repeatWidth)
         {
             transform.position = startPos;
         }
